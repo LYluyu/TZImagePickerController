@@ -694,15 +694,32 @@
         color = self.iconThemeColor;
     }
     CGRect rect = CGRectMake(0.0f, 0.0f, size.width, size.height);
-    UIGraphicsBeginImageContextWithOptions(rect.size, NO, [UIScreen mainScreen].scale);
-    CGContextRef context = UIGraphicsGetCurrentContext();
+    UIImage *image;
+    if (@available(iOS 17.0, *)) {
+        UIGraphicsImageRendererFormat *format = [[UIGraphicsImageRendererFormat alloc] init];
+        format.scale = [UIScreen mainScreen].scale;
+        format.opaque = NO;
+        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:image.size format:format];
+        
+        image = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull rendererContext) {
+            [self handleCreateImageWithColor:color context:rendererContext.CGContext size:size radius:radius];
+        }];
+    } else {
+        UIGraphicsBeginImageContextWithOptions(rect.size, NO, [UIScreen mainScreen].scale);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        [self handleCreateImageWithColor:color context:context size:size radius:radius];
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    }
+    return image;
+}
+
+- (void)handleCreateImageWithColor:(UIColor *)color context:(CGContextRef)context size:(CGSize)size radius:(CGFloat)radius {
     CGContextSetFillColorWithColor(context, [color CGColor]);
+    CGRect rect = CGRectMake(0.0f, 0.0f, size.width, size.height);
     UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:radius];
     CGContextAddPath(context, path.CGPath);
     CGContextFillPath(context);
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
 }
 
 #pragma mark - UIContentContainer
